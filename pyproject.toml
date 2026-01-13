@@ -1,0 +1,12 @@
+[project]
+name = "ch-13-charting-test"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "flet>=0.80.1",
+    "flet-charts>=0.80.1",
+    "flet-cli>=0.80.1",
+    "flet-desktop>=0.80.1",
+]
