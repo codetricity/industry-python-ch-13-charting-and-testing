@@ -74,7 +74,7 @@ By the end of this tutorial, students will be able to:
 
 ```python
 # Open the file
-file = open("plan/data.csv", "r")
+file = open("data.csv", "r")
 
 # Read all lines
 content = file.read()
@@ -91,7 +91,7 @@ file.close()
 
 ```python
 # Automatically closes the file
-with open("plan/data.csv", "r") as file:
+with open("data.csv", "r") as file:
     content = file.read()
 ```
 
@@ -260,29 +260,42 @@ expenses = int(expenses_str)
 ### 5.1 Step-by-Step Parsing
 
 ```python
-def read_csv(filename):
+def read_csv(filename: str) -> list[dict]:
     data = []
 
-    with open(filename, "r") as file:
-        lines = file.readlines()
+    try:
+        with open(filename, "r") as file:
+            lines = file.readlines()
 
-    # Skip header line (first line)
-    for line in lines[1:]:
-        # Remove newline and split by comma
-        line = line.strip()
-        # Split by comma and use tuple unpacking
-        month, sales_str, expenses_str = line.split(",")
+        # Skip the header line (first line)
+        for line in lines[1:]:
+            # Remove newline and any extra whitespace
+            line = line.strip()
 
-        # Convert to integers
-        sales = int(sales_str.strip())
-        expenses = int(expenses_str.strip())
+            # Skip empty lines
+            if not line:
+                continue
 
-        # Store in dictionary
-        data.append({
-            "month": month,
-            "sales": sales,
-            "expenses": expenses
-        })
+            # Split by comma and use tuple unpacking
+            month, sales_str, expenses_str = line.split(",")
+
+            # Extract and convert values
+            month = month.strip()
+            sales = int(sales_str.strip())
+            expenses = int(expenses_str.strip())
+
+            # Store in dictionary
+            data.append({"month": month, "sales": sales, "expenses": expenses})
+
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found!")
+        return []
+    except ValueError as e:
+        print(f"Error: Could not parse data - {e}")
+        return []
+    except Exception as e:
+        print(f"Error: {e}")
+        return []
 
     return data
 ```
@@ -292,15 +305,31 @@ def read_csv(filename):
 - Show converting strings to integers
 - Build a list of dictionaries
 
-### 5.2 Error Handling
+### 5.2 Calculating Totals
 
 ```python
-try:
-    data = read_csv("plan/data.csv")
-except FileNotFoundError:
-    print("File not found!")
-except ValueError:
-    print("Could not convert to number!")
+def calculate_totals(data: list[dict]) -> dict:
+    """Calculate total sales and expenses."""
+    total_sales = sum(item["sales"] for item in data)
+    total_expenses = sum(item["expenses"] for item in data)
+    total_profit = total_sales - total_expenses
+
+    return {"sales": total_sales, "expenses": total_expenses, "profit": total_profit}
+```
+
+- Show how to calculate summary statistics
+- Use list comprehensions with `sum()`
+- Return a dictionary with totals
+
+### 5.3 Error Handling
+
+```python
+# Error handling is built into read_csv function
+data = read_csv("data.csv")
+
+if not data:
+    # Handle the case where data couldn't be loaded
+    print("Could not load data!")
 ```
 
 - Handle missing files
@@ -323,11 +352,12 @@ uv add flet-charts
 
 ```python
 import flet as ft
-from flet_charts import BarChart, BarChartGroup, BarChartRod
+from flet_charts import BarChart, BarChartGroup, BarChartRod, ChartAxis, ChartAxisLabel
 ```
 
 - Show the import statements
 - Explain the chart components
+- `ChartAxis` and `ChartAxisLabel` are needed for custom axis labels
 
 ---
 
@@ -337,72 +367,183 @@ from flet_charts import BarChart, BarChartGroup, BarChartRod
 
 ```python
 def create_sales_chart(data):
-    # Create chart groups (bars) for each month
     groups = []
+    bottom_labels = []
 
-    for item in data:
-        # Create a group with sales and expenses bars
+    # Find max value to determine y-axis range
+    max_value = max(max(item["sales"], item["expenses"]) for item in data)
+    # Round up to nearest 1000 for clean axis labels
+    max_y = ((max_value // 1000) + 1) * 1000
+
+    for index, item in enumerate(data):
+        # Use first 3 letters of month name for x-axis label
+        month_short = item["month"][:3]
+
+        # Create a group with two bars: sales and expenses
+        # x must be an integer index
         group = BarChartGroup(
-            x=item["month"][:3],  # First 3 letters of month
-            bar_rods=[
+            x=index,
+            rods=[
+                # Sales bar (blue)
                 BarChartRod(
                     from_y=0,
                     to_y=item["sales"],
-                    color=ft.colors.BLUE,
-                    width=20,
-                    tooltip=f"Sales: ${item['sales']}"
+                    color=ft.Colors.BLUE_400,
+                    width=25,
+                    tooltip=f"Sales: ${item['sales']:,}",
                 ),
+                # Expenses bar (red)
                 BarChartRod(
                     from_y=0,
                     to_y=item["expenses"],
-                    color=ft.colors.RED,
-                    width=20,
-                    tooltip=f"Expenses: ${item['expenses']}"
-                )
-            ]
+                    color=ft.Colors.RED_400,
+                    width=25,
+                    tooltip=f"Expenses: ${item['expenses']:,}",
+                ),
+            ],
+            spacing=4,  # Space between rods in the group
         )
         groups.append(group)
 
-    # Create the chart
+        # Create custom label for x-axis
+        bottom_labels.append(ChartAxisLabel(value=index, label=month_short))
+
+    # Create custom labels for y-axis (left axis) with proper formatting
+    left_labels = []
+    # Create labels every 1000 (0, 1K, 2K, 3K, etc.)
+    for value in range(0, max_y + 1000, 1000):
+        if value == 0:
+            label_text = "0"
+        else:
+            label_text = f"{value // 1000}K"
+        # Use ft.Text to ensure consistent horizontal rendering
+        left_labels.append(ChartAxisLabel(value=value, label=ft.Text(label_text)))
+
+    # Create the chart with all groups
     chart = BarChart(
-        bar_groups=groups,
-        bar_group_rods_space=4,
-        space_between_groups=8,
-        width=800,
-        height=400
+        groups=groups,
+        group_spacing=12,
+        width=900,
+        height=450,
+        margin=ft.Margin.only(left=24),  # Add padding to the left for Y-axis labels
+        left_axis=ChartAxis(
+            labels=left_labels,
+            label_size=18,
+            label_spacing=12,
+        ),
+        bottom_axis=ChartAxis(title=ft.Text("Month"), labels=bottom_labels),
     )
 
     return chart
 ```
 
 - Explain each component
-- Show how bars are positioned
-- Explain colors and tooltips
+- Show how bars are positioned using integer indices
+- Explain that `x` must be an integer, not a string
+- Show how to create custom axis labels with `ChartAxisLabel`
+- Explain colors using `ft.Colors` (uppercase) for Flet 0.80+
+- Explain tooltips with number formatting
+- Show how to calculate max value for proper y-axis range
 
 ### 7.2 Adding Chart to Flet Page
 
 ```python
 def main(page: ft.Page):
     page.title = "Sales Data Visualization"
-    page.padding = 20
+    page.padding = 30
+    page.scroll = "auto"
 
-    # Read data
-    data = read_csv("plan/data.csv")
+    # Read data from CSV file
+    data = read_csv("data.csv")
+
+    if not data:
+        # Show error message if no data loaded
+        page.add(
+            ft.Text(
+                "Error: Could not load data from CSV file.",
+                color=ft.Colors.RED,
+                size=18,
+            )
+        )
+        return
+
+    # Calculate totals
+    totals = calculate_totals(data)
 
     # Create chart
     chart = create_sales_chart(data)
 
-    # Add to page
+    # Build the UI
     page.add(
-        ft.Text("Monthly Sales and Expenses", size=24, weight="bold"),
-        chart
+        # Title
+        ft.Text(
+            "Monthly Sales and Expenses",
+            size=28,
+            weight=ft.FontWeight.BOLD,
+            color=ft.Colors.BLUE_700,
+        ),
+        # Summary statistics
+        ft.Container(
+            content=ft.Row(
+                [
+                    ft.Text(
+                        f"Total Sales: ${totals['sales']:,}",
+                        size=16,
+                        weight=ft.FontWeight.W_500,
+                        color=ft.Colors.BLUE_700,
+                    ),
+                    ft.Text(
+                        f"Total Expenses: ${totals['expenses']:,}",
+                        size=16,
+                        weight=ft.FontWeight.W_500,
+                        color=ft.Colors.RED_700,
+                    ),
+                    ft.Text(
+                        f"Total Profit: ${totals['profit']:,}",
+                        size=16,
+                        weight=ft.FontWeight.W_500,
+                        color=ft.Colors.GREEN_700,
+                    ),
+                ],
+                spacing=30,
+            ),
+            margin=ft.Margin.only(bottom=20),
+        ),
+        # Chart
+        ft.Container(
+            content=chart,
+            padding=20,
+            border=ft.Border.all(1, ft.Colors.GREY_300),
+            border_radius=10,
+        ),
+        # Legend
+        ft.Row(
+            [
+                ft.Container(
+                    width=20, height=20, bgcolor=ft.Colors.BLUE_400, border_radius=4
+                ),
+                ft.Text("Sales", size=14),
+                ft.Container(width=30),  # Spacing
+                ft.Container(
+                    width=20, height=20, bgcolor=ft.Colors.RED_400, border_radius=4
+                ),
+                ft.Text("Expenses", size=14),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            margin=ft.Margin.only(top=20),
+        ),
     )
 
-ft.app(target=main)
+
+if __name__ == "__main__":
+    ft.run(main)
 ```
 
 - Show complete app structure
-- Explain the flow: read → process → visualize
+- Explain the flow: read → process → calculate → visualize
+- Note: Use `ft.run(main)` instead of `ft.app(target=main)` for Flet 0.80+
+- Use `ft.Colors` (uppercase) instead of `ft.colors` for Flet 0.80+
+- Use `ft.Margin.only()` and `ft.Border.all()` instead of `ft.margin.only()` and `ft.border.all()`
 
 ---
 
