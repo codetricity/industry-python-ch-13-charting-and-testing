@@ -2,6 +2,11 @@
 
 This tutorial teaches students how to read CSV files, parse data using string methods, and create visualizations using `flet-charts`.
 
+[Live Site](https://codetricity.github.io/industry-python-ch-13-charting-and-testing/)
+
+Note: will take a minute to load with GitHub pages the first time due to
+the entire app and pyodide being loaded.
+
 ## Learning Objectives
 
 - Read text files in Python
@@ -62,27 +67,32 @@ uv run pytest
 ## Concepts Covered
 
 ### File I/O (Section C)
+
 - Reading text files with `open()` and `with` statement
 - CSV-style parsing
 - Stripping newlines and whitespace
 
 ### String Methods (Section B)
+
 - `split()` - breaking strings into lists
 - `strip()` - removing whitespace
 - String slicing with indices
 
 ### Tuples and Sets (Section B)
+
 - Tuple basics (creation, unpacking)
 - Sets and unique collections
 - Differences between Python iterators (list, tuple, set, dict, string)
 - When to use each data type
 
 ### Data Visualization
+
 - Creating bar charts with `flet-charts`
 - Displaying multiple data series
 - Adding tooltips and labels
 
 ### Testing (Section J)
+
 - Using `assert` for lightweight testing
 - Testing pure functions
 - Writing test cases for edge cases
