@@ -18,7 +18,7 @@ This tutorial teaches students how to read CSV files, parse data using string me
 - `tutorial_outline.md` - Detailed tutorial outline with step-by-step instructions
 - `sales_chart_app.py` - Complete working example application
 - `test_sales_chart.py` - Test file demonstrating `assert` and testing pure functions
-- `../plan/data.csv` - Sample data file (monthly sales and expenses)
+- `data.csv` - Sample data file (monthly sales and expenses)
 
 ## Prerequisites
 
@@ -28,14 +28,17 @@ This tutorial teaches students how to read CSV files, parse data using string me
 
 ## Installation
 
+Clone the repo and install all dependencies including the dev group (required for running the desktop app locally):
+
 ```bash
-uv add flet flet-charts
+uv sync
 ```
 
-Or with pip:
+The dev group includes `flet-desktop` (for running locally), `flet-cli` (for building), and `pytest` (for tests).
+For web/CI deployment only, omit the dev group:
 
 ```bash
-pip install flet flet-charts
+uv sync --no-dev
 ```
 
 ## Running the Example
@@ -53,13 +56,7 @@ python sales_chart_app.py
 ## Running the Tests
 
 ```bash
-uv run test_sales_chart.py
-```
-
-Or:
-
-```bash
-python test_sales_chart.py
+uv run pytest
 ```
 
 ## Concepts Covered
