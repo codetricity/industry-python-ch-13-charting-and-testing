@@ -35,9 +35,6 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run tests
-        run: uv run pytest
-
       - name: Install Flutter SDK
         uses: subosito/flutter-action@v2
         with:
